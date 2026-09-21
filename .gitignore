@@ -1,0 +1,49 @@
+# ── Environment & secrets ─────────────────────────
+.env
+.env.json
+*.env
+lib/core/config/api_keys.dart
+
+# ── Firebase ──────────────────────────────────────
+firebase_options.dart
+google-services.json
+GoogleService-Info.plist
+.firebase/
+
+# ── Flutter / Dart ────────────────────────────────
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# ── IDE ───────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+
+# ── OS ────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Android ───────────────────────────────────────
+android/.gradle/
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+
+# ── iOS ───────────────────────────────────────────
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# ── Coverage ──────────────────────────────────────
+coverage/
+
+
+# ── Node (Firebase Cloud Functions) ──────────────
+functions/node_modules/

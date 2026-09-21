@@ -1,0 +1,73 @@
+{
+  "@@locale": "en",
+
+  "appName": "ForFood",
+
+  "settings": "Settings",
+  "language": "Language",
+  "notification": "Notification Setting",
+  "password": "Password Setting",
+  "darkMode": "Dark Mode",
+  "privacy": "Privacy Policy",
+  "terms": "Terms of Service",
+  "deleteAccount": "Delete Account",
+
+  "yourMenu": "Your Menu",
+  "gallery": "Gallery",
+  "orders": "Orders",
+  "views": "Views",
+
+  "welcomeBack": "Welcome back",
+  "startServing": "Start serving more customers",
+  "goodMorning": "Good Morning",
+  "findFood": "Find food that fits your budget",
+
+  "recommendation": "Recommendation",
+  "highDemands": "High Demands",
+  "viewAll": "View All",
+  "search": "Search...",
+
+  "myOrders": "My Orders",
+  "myProfile": "My Profile",
+  "deliveryAddress": "Delivery Address",
+  "contactUs": "Contact Us",
+  "helpFAQs": "Help & FAQs",
+  "logOut": "Log Out",
+
+  "addItem": "Add Item",
+  "addImage": "Add Image",
+  "checkout": "Checkout",
+  "placeOrder": "Place Order",
+
+  "pickup": "Pickup",
+  "delivery": "Delivery",
+  "total": "Total",
+
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "save": "Save",
+  "update": "Update",
+  "delete": "Delete",
+  "edit": "Edit",
+  "close": "Close",
+  "done": "Done",
+  "next": "Next",
+  "back": "Back",
+
+  "loading": "Loading...",
+  "error": "Error",
+  "success": "Success",
+  "noData": "No data available",
+  "noResults": "No results found",
+  "noOrders": "No orders yet",
+  "noImages": "No images yet",
+  "noItems": "No items yet",
+
+  "email": "Email",
+  "passwordLabel": "Password",
+  "fullName": "Full Name",
+  "phoneNumber": "Phone Number",
+  "address": "Address",
+  "restaurantName": "Restaurant Name",
+  "description": "Description"
+}

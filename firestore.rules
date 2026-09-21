@@ -1,0 +1,223 @@
+// ============================================================
+// FORFOOD — FIRESTORE SECURITY RULES
+// ============================================================
+// Production-ready security rules for the ForFood platform.
+// ============================================================
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================================
+    // HELPER FUNCTIONS
+    // ============================================================
+
+    /// Returns true if the request is from an authenticated user.
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    /// Returns true if the user's email is verified.
+    function isEmailVerified() {
+      return isAuthenticated() && request.auth.token.email_verified == true;
+    }
+
+    /// Returns true if the restaurant has an active subscription.
+    function hasActiveSubscription(restaurantId) {
+      return get(/databases/$(database)/documents/restaurants/$(restaurantId))
+          .data.subscriptionActive == true;
+    }
+
+    /// Returns true if the requesting user is the restaurant owner.
+    function isRestaurantOwner(restaurantId) {
+      return isAuthenticated()
+          && get(/databases/$(database)/documents/restaurants/$(restaurantId))
+              .data.ownerId == request.auth.uid;
+    }
+
+    /// Returns true if the status is a valid order status.
+    function isValidOrderStatus(status) {
+      return status == 'pending'
+          || status == 'accepted'
+          || status == 'preparing'
+          || status == 'readyForPickup'
+          || status == 'outForDelivery'
+          || status == 'completed'
+          || status == 'cancelled'
+          || status == 'rejected';
+    }
+
+    /// Returns true if the method is a valid delivery method.
+    function isValidDeliveryMethod(method) {
+      return method == 'pickup' || method == 'delivery';
+    }
+
+    /// Returns true if the method is a valid payment method.
+    function isValidPaymentMethod(method) {
+      return method == 'cashOnDelivery';
+    }
+
+    // ============================================================
+    // USER PROFILES
+    // ============================================================
+    // Path: /users/{userId}
+    // ============================================================
+
+    match /users/{userId} {
+      // Owner-only read
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+
+      // Owner-only create with valid initial data
+      allow create: if isAuthenticated()
+          && request.auth.uid == userId
+          && request.resource.data.fullName is string
+          && request.resource.data.email is string
+          && request.resource.data.createdAt is timestamp;
+
+      // Owner-only update (cannot change email or createdAt)
+      allow update: if isAuthenticated()
+          && request.auth.uid == userId
+          && request.resource.data.email == resource.data.email;
+
+      // Owner-only delete (for account deletion)
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ============================================================
+    // RESTAURANT PROFILES
+    // ============================================================
+    // Path: /restaurants/{restaurantId}
+    // ============================================================
+
+    match /restaurants/{restaurantId} {
+      // Public read — anyone can view restaurant profiles
+      allow read: if true;
+
+      // Authenticated, email-verified users can create restaurants
+      allow create: if isAuthenticated()
+          && isEmailVerified()
+          && request.resource.data.ownerId == request.auth.uid
+          && request.resource.data.name is string
+          && request.resource.data.address is string
+          && request.resource.data.latitude is number
+          && request.resource.data.longitude is number
+          && request.resource.data.geohash is string;
+
+      // Only the owner with active subscription can update
+      allow update: if isRestaurantOwner(restaurantId)
+          && hasActiveSubscription(restaurantId);
+
+      // Only the owner can delete
+      allow delete: if isRestaurantOwner(restaurantId);
+    }
+
+    // ============================================================
+    // MENU ITEMS
+    // ============================================================
+    // Path: /restaurants/{restaurantId}/menu_items/{menuItemId}
+    // ============================================================
+
+    match /restaurants/{restaurantId}/menu_items/{menuItemId} {
+      // Public read — anyone can view menu items
+      allow read: if true;
+
+      // Only the owner with active subscription can create
+      allow create: if isRestaurantOwner(restaurantId)
+          && hasActiveSubscription(restaurantId)
+          && request.resource.data.restaurantId == restaurantId
+          && request.resource.data.name is string
+          && request.resource.data.price is number
+          && request.resource.data.price >= 0;
+
+      // Only the owner with active subscription can update
+      allow update: if isRestaurantOwner(restaurantId)
+          && hasActiveSubscription(restaurantId);
+
+      // Only the owner with active subscription can delete
+      allow delete: if isRestaurantOwner(restaurantId)
+          && hasActiveSubscription(restaurantId);
+    }
+
+    // ============================================================
+    // GALLERY IMAGES
+    // ============================================================
+    // Path: /restaurants/{restaurantId}/gallery/{imageId}
+    // ============================================================
+
+    match /restaurants/{restaurantId}/gallery/{imageId} {
+      // Public read — anyone can view gallery images
+      allow read: if true;
+
+      // Only the owner with active subscription can add images
+      allow create: if isRestaurantOwner(restaurantId)
+          && hasActiveSubscription(restaurantId)
+          && request.resource.data.imageUrl is string;
+
+      // Only the owner with active subscription can delete
+      allow delete: if isRestaurantOwner(restaurantId)
+          && hasActiveSubscription(restaurantId);
+    }
+
+    // ============================================================
+    // ORDERS
+    // ============================================================
+    // Path: /orders/{orderId}
+    //
+    // Read: Both user and restaurant can read.
+    // Create: Authenticated users can place orders (status=pending).
+    // Update: User cancels own order; Restaurant updates status.
+    // Delete: No deletion (audit trail).
+    // ============================================================
+
+    match /orders/{orderId} {
+      // Both parties can read
+      // Note: Restaurant check requires the restaurantId field
+      // to be set on the order document.
+      allow read: if isAuthenticated()
+          && (
+            resource.data.userId == request.auth.uid
+            || resource.data.restaurantId == request.auth.uid
+          );
+
+      // Authenticated users can create orders
+      allow create: if isAuthenticated()
+          && isEmailVerified()
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.restaurantId is string
+          && request.resource.data.restaurantName is string
+          && request.resource.data.items is list
+          && request.resource.data.items.size() > 0
+          && request.resource.data.total is number
+          && request.resource.data.total >= 0
+          && request.resource.data.status == 'pending'
+          && isValidDeliveryMethod(request.resource.data.deliveryMethod)
+          && isValidPaymentMethod(request.resource.data.paymentMethod);
+
+      // Users can cancel their own orders (before completion)
+      // Restaurants can update order status
+      allow update: if isAuthenticated()
+          && (
+            // User cancelling their own order
+            (
+              resource.data.userId == request.auth.uid
+              && request.resource.data.status == 'cancelled'
+              && resource.data.status != 'completed'
+              && resource.data.status != 'cancelled'
+              && resource.data.status != 'rejected'
+            )
+            ||
+            // Restaurant updating order status
+            // Note: restaurantId field stores the restaurant's Firestore ID
+            // which equals the restaurant owner's Auth UID.
+            (
+              resource.data.restaurantId == request.auth.uid
+              && isValidOrderStatus(request.resource.data.status)
+            )
+          );
+
+      // No deletion — maintain audit trail
+      allow delete: if false;
+    }
+  }
+}

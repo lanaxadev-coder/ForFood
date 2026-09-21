@@ -1,0 +1,127 @@
+name: forfood
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.3.0
+  flutter_screenutil: ^5.9.3
+  
+  # State Management
+  flutter_bloc: ^9.1.1
+  equatable: ^2.1.0
+  bloc_test: ^10.0.0
+  flutter_compass: ^0.8.1
+
+  # Dependency Injection
+  get_it: ^9.2.1
+  injectable: ^2.7.1+4
+  
+  # Networking
+  dio: ^5.11.0
+  retrofit: ^4.9.2
+  connectivity_plus: ^7.3.1
+  
+  # JSON
+  json_annotation: ^4.9.0
+  freezed_annotation: ^2.4.4
+  
+  # Routing
+  go_router: ^17.5.0
+  
+  # Local Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  shared_preferences: ^2.5.5
+  
+  # Functional Programming
+  fpdart: ^1.2.0
+  
+  # FIREBASE
+  firebase_core: ^3.8.0
+  firebase_auth: ^5.3.3
+  cloud_firestore: ^5.5.0
+  firebase_storage: ^12.3.3
+  firebase_app_check: ^0.3.2+9
+  image_picker: ^1.1.2
+  
+  # Auth
+  google_sign_in: ^6.1.5
+  country_code_picker: ^3.0.0
+  http: ^1.2.0
+  url_launcher: ^6.2.0
+  fl_chart: ^0.68.0
+  shimmer: ^3.0.0
+  provider: ^6.1.2
+
+  # Location
+  geocoding: ^4.0.0
+  flutter_map: ^6.0.0
+  latlong2: ^0.9.0
+  geolocator: ^14.0.3
+  flutter_local_notifications: ^17.2.3
+
+  # Localization
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+
+  # Revenue
+  purchases_flutter: ^10.8.0
+  firebase_messaging: ^15.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.13
+  json_serializable: ^6.8.0
+  injectable_generator: ^2.6.2
+  retrofit_generator: ^8.2.1
+  hive_generator: ^2.0.1
+  freezed: ^2.5.2
+  mocktail: ^1.0.5
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#F5CB58"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
+  remove_alpha_ios: true
+
+flutter:
+  generate: true
+  
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Poppins-ExtraBold.ttf
+          weight: 800
+    - family: LeagueSpartan
+      fonts:
+        - asset: assets/fonts/LeagueSpartan-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/LeagueSpartan-SemiBold.ttf
+          weight: 600
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Black.ttf
+          weight: 900

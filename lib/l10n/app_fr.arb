@@ -1,0 +1,73 @@
+{
+  "@@locale": "fr",
+
+  "appName": "ForFood",
+
+  "settings": "Paramètres",
+  "language": "Langue",
+  "notification": "Paramètres de notification",
+  "password": "Paramètres du mot de passe",
+  "darkMode": "Mode sombre",
+  "privacy": "Politique de confidentialité",
+  "terms": "Conditions d'utilisation",
+  "deleteAccount": "Supprimer le compte",
+
+  "yourMenu": "Votre menu",
+  "gallery": "Galerie",
+  "orders": "Commandes",
+  "views": "Vues",
+
+  "welcomeBack": "Bon retour",
+  "startServing": "Commencez à servir plus de clients",
+  "goodMorning": "Bonjour",
+  "findFood": "Trouvez de la nourriture selon votre budget",
+
+  "recommendation": "Recommandations",
+  "highDemands": "Forte demande",
+  "viewAll": "Voir tout",
+  "search": "Rechercher...",
+
+  "myOrders": "Mes commandes",
+  "myProfile": "Mon profil",
+  "deliveryAddress": "Adresse de livraison",
+  "contactUs": "Contactez-nous",
+  "helpFAQs": "Aide et FAQ",
+  "logOut": "Déconnexion",
+
+  "addItem": "Ajouter un article",
+  "addImage": "Ajouter une image",
+  "checkout": "Paiement",
+  "placeOrder": "Passer la commande",
+
+  "pickup": "Retrait",
+  "delivery": "Livraison",
+  "total": "Total",
+
+  "cancel": "Annuler",
+  "confirm": "Confirmer",
+  "save": "Enregistrer",
+  "update": "Mettre à jour",
+  "delete": "Supprimer",
+  "edit": "Modifier",
+  "close": "Fermer",
+  "done": "Terminé",
+  "next": "Suivant",
+  "back": "Retour",
+
+  "loading": "Chargement...",
+  "error": "Erreur",
+  "success": "Succès",
+  "noData": "Aucune donnée disponible",
+  "noResults": "Aucun résultat trouvé",
+  "noOrders": "Pas encore de commandes",
+  "noImages": "Pas encore d'images",
+  "noItems": "Pas encore d'articles",
+
+  "email": "Email",
+  "passwordLabel": "Mot de passe",
+  "fullName": "Nom complet",
+  "phoneNumber": "Numéro de téléphone",
+  "address": "Adresse",
+  "restaurantName": "Nom du restaurant",
+  "description": "Description"
+}

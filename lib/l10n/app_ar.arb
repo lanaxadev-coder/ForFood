@@ -1,0 +1,73 @@
+{
+  "@@locale": "ar",
+
+  "appName": "فورفود",
+
+  "settings": "الإعدادات",
+  "language": "اللغة",
+  "notification": "إعدادات الإشعارات",
+  "password": "إعدادات كلمة المرور",
+  "darkMode": "الوضع الداكن",
+  "privacy": "سياسة الخصوصية",
+  "terms": "شروط الخدمة",
+  "deleteAccount": "حذف الحساب",
+
+  "yourMenu": "قائمتك",
+  "gallery": "المعرض",
+  "orders": "الطلبات",
+  "views": "المشاهدات",
+
+  "welcomeBack": "مرحباً بعودتك",
+  "startServing": "ابدأ خدمة المزيد من العملاء",
+  "goodMorning": "صباح الخير",
+  "findFood": "ابحث عن طعام يناسب ميزانيتك",
+
+  "recommendation": "التوصيات",
+  "highDemands": "الأكثر طلباً",
+  "viewAll": "عرض الكل",
+  "search": "بحث...",
+
+  "myOrders": "طلباتي",
+  "myProfile": "ملفي الشخصي",
+  "deliveryAddress": "عنوان التوصيل",
+  "contactUs": "اتصل بنا",
+  "helpFAQs": "المساعدة والأسئلة الشائعة",
+  "logOut": "تسجيل الخروج",
+
+  "addItem": "إضافة عنصر",
+  "addImage": "إضافة صورة",
+  "checkout": "الدفع",
+  "placeOrder": "تقديم الطلب",
+
+  "pickup": "استلام",
+  "delivery": "توصيل",
+  "total": "المجموع",
+
+  "cancel": "إلغاء",
+  "confirm": "تأكيد",
+  "save": "حفظ",
+  "update": "تحديث",
+  "delete": "حذف",
+  "edit": "تعديل",
+  "close": "إغلاق",
+  "done": "تم",
+  "next": "التالي",
+  "back": "رجوع",
+
+  "loading": "جارٍ التحميل...",
+  "error": "خطأ",
+  "success": "نجاح",
+  "noData": "لا توجد بيانات",
+  "noResults": "لا توجد نتائج",
+  "noOrders": "لا توجد طلبات بعد",
+  "noImages": "لا توجد صور بعد",
+  "noItems": "لا توجد عناصر بعد",
+
+  "email": "البريد الإلكتروني",
+  "passwordLabel": "كلمة المرور",
+  "fullName": "الاسم الكامل",
+  "phoneNumber": "رقم الهاتف",
+  "address": "العنوان",
+  "restaurantName": "اسم المطعم",
+  "description": "الوصف"
+}

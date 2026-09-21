@@ -1,0 +1,26 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "forfood-app-8d9e9",
+          "appId": "1:958217630626:android:55c693edc5c50f0204f8fb",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "forfood-app-8d9e9",
+          "configurations": {
+            "android": "1:958217630626:android:55c693edc5c50f0204f8fb",
+            "ios": "1:958217630626:ios:2738f5569b3eb4b804f8fb"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
