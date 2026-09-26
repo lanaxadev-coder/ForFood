@@ -12,7 +12,7 @@ Built solo by **Zekkour Ritadj** for [RevenueCat Shipaton 2026](https://revenuec
 
 ## Demo video
 
-🎬 **[Watch the 2-minute demo](TODO_ADD_YOUTUBE_LINK_HERE)**
+🎬 **[Watch the demo](https://www.youtube.com/watch?v=T9x12rNwpqE)**
 
 ---
 
@@ -20,10 +20,10 @@ Built solo by **Zekkour Ritadj** for [RevenueCat Shipaton 2026](https://revenuec
 
 ForFood is a two-sided marketplace:
 
-- **Diners** search by craving, budget, and location. They get ranked results (cheapest → nearest → best-rated), add items to a single-restaurant cart, and check out for delivery or pickup.
-- **Restaurants** manage their menu, accept or reject orders, progress them through the kitchen workflow, chat with customers, and see live stats (orders, revenue, ratings, top items).
+- **Diners** search by craving, budget, and location. Results are ranked cheapest-first, then by distance, then by rating — so people on a tight budget actually find a meal they can afford. They add items to a single-restaurant cart and check out for delivery or pickup.
+- **Restaurants** manage their menu, accept or reject incoming orders, progress them through the kitchen workflow, chat with customers, and view live stats (orders, revenue, ratings, top items).
 
-The differentiator is the **budget-first search**: instead of ranking by rating or featured placement, ForFood sorts primarily by price, then proximity, then rating — so the app actually serves people who need a cheap meal near them.
+The differentiator is the **budget-first search**: instead of ranking by rating or sponsored placement, ForFood sorts primarily by price. This serves users who need an affordable meal nearby.
 
 ---
 
@@ -33,10 +33,11 @@ The restaurant subscription tier is powered by the **RevenueCat SDK** (`purchase
 
 - Entitlement: `premium`
 - Offerings: `default` (monthly + yearly packages)
-- Sandbox: RevenueCat Test Store (for judge testing without a store release)
+- Sandbox: RevenueCat **Test Store** (for judge testing without a store release)
 - Config: `lib/service/revenuecat/revenuecat_service.dart`
+- Subscriber identification: `Purchases.logIn(uid)` is called on login
 
-Because this is a **Next Gen** submission, the app is distributed via source + video, not the App Store or Play Store. RevenueCat is configured against the Test Store so judges can see a working paywall and purchase flow on camera.
+Because this is a **Next Gen Award** submission, the app is distributed via source + video rather than the App Store or Play Store. RevenueCat is configured against the Test Store so judges can see a working paywall and purchase flow on camera.
 
 ---
 
@@ -46,12 +47,14 @@ Because this is a **Next Gen** submission, the app is distributed via source + v
 - Email-verified signup
 - Budget-first search: craving + max budget + location
 - Nearby restaurants via geohash-based spatial query
+- Smart search ranking: matches "pizzas" to "pizza", tolerates typos, handles multi-word cravings
 - Single-restaurant cart with quantity steppers
 - Pickup or delivery checkout with saved addresses
-- Live order tracking: pending → accepted → preparing → ready/out-for-delivery → completed
-- In-order chat with the restaurant
-- Push notifications on every order state change
+- Live order tracking: pending → accepted → preparing → ready / out for delivery → completed
+- In-order chat with the restaurant (swipe to delete your own messages)
+- Push notifications for every order state change (swipe to delete, or clear all)
 - Reviews with 1–5 stars
+- "Your usual" — one-tap reorder of your most repeated order
 
 ### For restaurants
 - Onboarding with map-picked address
@@ -67,8 +70,8 @@ Because this is a **Next Gen** submission, the app is distributed via source + v
 - English / Arabic / French localization
 - Haptic feedback on primary actions
 - Skeleton loaders on every list
-- Responsive layout
-- Dark-mode-ready color system
+- Responsive layout (scales from small phones to tablets)
+- Disk-cached map tiles and images
 
 ---
 
@@ -78,17 +81,20 @@ Because this is a **Next Gen** submission, the app is distributed via source + v
 |---|---|
 | Framework | Flutter (Dart 3.10) |
 | State management | `flutter_bloc` |
-| Auth | Firebase Auth |
-| Database | Cloud Firestore |
-| Storage | Firebase Storage + ImgBB |
+| Auth | Firebase Auth (email verification) |
+| Database | Cloud Firestore (real-time listeners) |
+| Storage | Firebase Storage + ImgBB for image hosting |
 | Push | Firebase Cloud Messaging |
-| Maps | `flutter_map` + Geoapify + OpenStreetMap |
-| Geocoding | Nominatim |
-| Routing | OSRM |
+| Maps | `flutter_map` + Geoapify tiles + OpenStreetMap |
+| Map caching | `flutter_map_cache` + Hive |
+| Geocoding | Nominatim (OpenStreetMap) |
+| Routing | OSRM (driving directions) |
 | Location | `geolocator` + `flutter_compass` |
-| Subscriptions | **RevenueCat** |
+| Subscriptions | **RevenueCat** (`purchases_flutter`) |
+| Image caching | `cached_network_image` |
 | Charts | `fl_chart` |
 | i18n | `flutter_localizations` + `intl` |
+| Image picking | `image_picker` |
 
 ---
 
