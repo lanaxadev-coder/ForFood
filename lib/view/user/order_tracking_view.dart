@@ -18,10 +18,12 @@ import 'package:forfood/service/order/order_bloc.dart';
 import 'package:forfood/service/order/order_state.dart';
 import 'package:forfood/utilities/haptic_feedback.dart';
 import 'package:forfood/utilities/page_transition.dart';
+import 'package:forfood/utilities/tab_route.dart';
 import 'package:forfood/view/chat_inbox_view.dart';
 
 import 'package:forfood/view/user/cancel_order_view.dart';
 import 'package:forfood/view/user/home_page.dart';
+import 'package:forfood/view/user/my_order_view.dart';
 import 'package:forfood/view/user/order_chat_view.dart';
 import 'package:forfood/view/user/search_screen.dart';
 
@@ -77,7 +79,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
             setState(() => _currentIndex = index);   // ✅ highlight
 
         // ✅ Cart tab → cart drawer
-        _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
         break;
       case 4:
             setState(() => _currentIndex = index);   // ✅ highlight

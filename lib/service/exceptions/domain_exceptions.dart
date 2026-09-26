@@ -1,33 +1,26 @@
+
+
+
 // ============================================================
 // DOMAIN EXCEPTIONS
 // ============================================================
 // Typed exceptions for all domain-level error scenarios.
 //
-// These exceptions are thrown by providers and services when
-// a business rule is violated or a Firebase operation fails.
-// They are caught by BLoCs and mapped to UI-friendly error
-// messages without exposing raw FirebaseException details
-// to the presentation layer.
+// IMPORTANT: The string passed to `super(...)` is what the USER sees.
+// Keep it plain English (or whichever language), no IDs, no codes,
+// no "Firestore", no "Exception".
 //
-// Every exception extends [DomainException], which provides
-// a common base with a user-friendly [message] and optional
-// machine-readable [code].
+// For developer logging, use `debugPrint('❌ ...: $e')` at the catch site.
 // ============================================================
 
 /// Base exception for all domain-level errors in ForFood.
-///
-/// Provides a consistent structure for error handling across
-/// all services and BLoCs.
 abstract class DomainException implements Exception {
-  /// User-friendly error message that can be displayed directly
-  /// in the UI or mapped to a localized string.
+  /// User-friendly error message shown in the UI.
   final String message;
 
   /// Optional machine-readable error code for programmatic handling.
   final String? code;
 
-  /// Creates a new [DomainException] with the given [message]
-  /// and optional [code].
   const DomainException(this.message, {this.code});
 
   @override
@@ -38,155 +31,129 @@ abstract class DomainException implements Exception {
 // AUTH EXCEPTIONS
 // ============================================================
 
-/// Thrown when user authentication fails (wrong email/password).
+/// Generic auth failure.
 class AuthenticationException extends DomainException {
-  const AuthenticationException(super.message);
+  const AuthenticationException([super.message = 'Authentication failed. Please try again.']);
 }
 
-/// Thrown when a user attempts to sign up with an email that
-/// is already registered.
+/// Email already registered.
 class EmailAlreadyInUseException extends DomainException {
   const EmailAlreadyInUseException()
-      : super('An account with this email already exists');
+      : super('That email is already registered. Try logging in instead.');
 }
 
-/// Thrown when a user attempts to log in with invalid credentials.
+/// Wrong email/password.
 class InvalidCredentialsException extends DomainException {
   const InvalidCredentialsException()
-      : super('Invalid email or password. Please try again.');
+      : super('Wrong email or password. Please try again.');
 }
 
-/// Thrown when a user attempts to perform an action that requires
-/// email verification but has not yet verified their email.
+/// Email not verified yet.
 class EmailNotVerifiedException extends DomainException {
   const EmailNotVerifiedException()
-      : super('Email verification is required before proceeding');
+      : super('Please verify your email first — check your inbox.');
 }
 
-
-/// Thrown when user tries to login but hasn't completed signup.
+/// Signup not finished.
 class SignupIncompleteException extends DomainException {
   const SignupIncompleteException()
-      : super('Please complete your signup first. Use the Sign Up screen.');
+      : super('Please finish signing up first.');
 }
 
-/// Thrown when user account deletion fails.
+/// Account deletion failed.
 class AccountDeletionException extends DomainException {
-  const AccountDeletionException(super.message);
+  const AccountDeletionException([super.message = 'Couldn\'t delete your account. Please try again.']);
 }
 
 // ============================================================
 // USER EXCEPTIONS
 // ============================================================
 
-/// Thrown when a user document is not found in Firestore.
 class UserNotFoundException extends DomainException {
   const UserNotFoundException(String userId)
-      : super('User with ID $userId not found');
+      : super('We couldn\'t find your account. Please log in again.');
 }
 
 // ============================================================
 // RESTAURANT EXCEPTIONS
 // ============================================================
 
-/// Thrown when a restaurant document is not found in Firestore.
 class RestaurantNotFoundException extends DomainException {
   const RestaurantNotFoundException(String restaurantId)
-      : super('Restaurant with ID $restaurantId not found');
+      : super('This restaurant is no longer available.');
 }
 
-/// Thrown when a non-restaurant-owner attempts to modify a
-/// restaurant profile.
 class RestaurantPermissionException extends DomainException {
   const RestaurantPermissionException()
-      : super('You do not have permission to modify this restaurant');
+      : super('You don\'t have permission to do that.');
 }
 
-/// Thrown when a restaurant's subscription has expired or is inactive.
 class SubscriptionInactiveException extends DomainException {
   const SubscriptionInactiveException()
-      : super('Active subscription required to access this feature');
+      : super('An active subscription is required for this feature.');
 }
 
 // ============================================================
 // MENU ITEM EXCEPTIONS
 // ============================================================
 
-/// Thrown when a menu item document is not found in Firestore.
 class MenuItemNotFoundException extends DomainException {
   const MenuItemNotFoundException(String menuItemId)
-      : super('Menu item with ID $menuItemId not found');
+      : super('That dish is no longer on the menu.');
 }
 
-/// Thrown when inventory is insufficient for an order.
 class InsufficientInventoryException extends DomainException {
   const InsufficientInventoryException(
     String itemName,
     int requested,
     int available,
-  ) : super(
-          'Insufficient inventory for $itemName: '
-          'requested $requested, available $available',
-        );
+  ) : super('$itemName is out of stock right now.');
 }
 
 // ============================================================
 // SEARCH EXCEPTIONS
 // ============================================================
 
-/// Thrown when the price filter is outside acceptable bounds.
 class PriceFilterOutOfRangeException extends DomainException {
   const PriceFilterOutOfRangeException()
-      : super('Price filter must be greater than 0 and less than \$1000');
+      : super('Please enter a budget between \$1 and \$1000.');
 }
 
-/// Thrown when the user's location cannot be determined for
-/// distance-based search.
 class LocationUnavailableException extends DomainException {
   const LocationUnavailableException()
-      : super('Unable to determine your location. Please enable location services.');
+      : super('We couldn\'t get your location. Please enable location access and try again.');
 }
 
 // ============================================================
 // CART EXCEPTIONS
 // ============================================================
 
-/// Thrown when user attempts to add items from multiple restaurants
-/// to the same cart. ForFood enforces single-restaurant carts.
 class MultiRestaurantCartException extends DomainException {
   const MultiRestaurantCartException()
-      : super(
-          'Cannot add items from multiple restaurants to the same cart. '
-          'Please clear your cart first.',
-        );
+      : super('Your cart already has items from another restaurant. Please clear it first.');
 }
 
-/// Thrown when user attempts to add an unavailable menu item to cart.
 class ItemUnavailableException extends DomainException {
   const ItemUnavailableException(String itemName)
-      : super('$itemName is currently unavailable');
+      : super('$itemName is currently unavailable.');
 }
 
 // ============================================================
 // ORDER EXCEPTIONS
 // ============================================================
 
-/// Thrown when an order document is not found in Firestore.
 class OrderNotFoundException extends DomainException {
   const OrderNotFoundException(String orderId)
-      : super('Order with ID $orderId not found');
+      : super('We couldn\'t find that order.');
 }
 
-/// Thrown when an order state transition is invalid.
-/// Example: attempting to cancel a completed order.
 class InvalidOrderStateTransitionException extends DomainException {
   const InvalidOrderStateTransitionException(
     String currentState,
     String targetState,
-  ) : super('Cannot transition order from $currentState to $targetState');
+  ) : super('This order can\'t be updated anymore.');
 }
 
-/// Thrown when user attempts to place an order with an empty cart.
 class EmptyCartException extends DomainException {
   const EmptyCartException()
       : super('Your cart is empty. Add items before placing an order.');
@@ -196,29 +163,22 @@ class EmptyCartException extends DomainException {
 // FIRESTORE / NETWORK EXCEPTIONS
 // ============================================================
 
-/// Thrown when a Firestore write fails due to security rules.
 class PermissionDeniedException extends DomainException {
   const PermissionDeniedException()
-      : super('You do not have permission to perform this action');
+      : super('You don\'t have permission to do that.');
 }
 
-/// Thrown when network connectivity is unavailable.
 class NetworkUnavailableException extends DomainException {
   const NetworkUnavailableException()
-      : super(
-          'Network connection unavailable. '
-          'Please check your connection and try again.',
-        );
+      : super('Check your internet connection and try again.');
 }
 
-/// Thrown when a Firestore operation times out.
 class FirestoreTimeoutException extends DomainException {
   const FirestoreTimeoutException()
-      : super('The operation timed out. Please try again.');
+      : super('This is taking too long. Please try again.');
 }
 
-/// Thrown when a Firestore operation fails for an unexpected reason.
 class FirestoreOperationException extends DomainException {
   const FirestoreOperationException(String message)
-      : super('Database operation failed: $message');
+      : super('Something went wrong on our end. Please try again.');
 }

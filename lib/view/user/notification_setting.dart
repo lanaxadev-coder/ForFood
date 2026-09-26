@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:forfood/utilities/page_transition.dart';
 import 'package:forfood/utilities/tab_route.dart';
 import 'package:forfood/view/chat_inbox_view.dart';
+import 'package:forfood/view/user/my_order_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:forfood/core/theme/app_color.dart';
@@ -102,7 +103,7 @@ class _NotificationSettingViewState extends State<NotificationSettingView> {
             setState(() => _currentIndex = index);   // ✅ highlight
 
         // ✅ Cart tab → cart drawer
-        _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
         break;
       case 4:
             setState(() => _currentIndex = index);   // ✅ highlight

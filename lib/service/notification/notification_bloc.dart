@@ -11,6 +11,7 @@ import 'package:forfood/service/database/firestore_provider.dart';
 import 'package:forfood/service/exceptions/domain_exceptions.dart';
 import 'package:forfood/service/notification/notification_event.dart';
 import 'package:forfood/service/notification/notification_state.dart';
+import 'package:forfood/utilities/friendly_error.dart';
 
 class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
   final FirestoreProvider _firestoreProvider;
@@ -25,7 +26,9 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     on<NotificationEventStreamError>(_onStreamError);
     on<NotificationEventMarkAsRead>(_onMarkAsRead);
     on<NotificationEventMarkAllAsRead>(_onMarkAllAsRead);
-  }
+
+    on<NotificationEventDelete>(_onDelete);
+    on<NotificationEventClearAll>(_onClearAll);  }
 
   // ============================================================
   // CREATE
@@ -103,7 +106,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     try {
       await _firestoreProvider.markNotificationAsRead(event.notificationId);
     } on FirestoreOperationException catch (e) {
-      emit(NotificationStateError(message: e.message));
+      emit(NotificationStateError(message: friendlyError(e)));
     }
   }
 
@@ -122,6 +125,29 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     }
   }
 
+
+
+  Future<void> _onDelete(
+    NotificationEventDelete event,
+    Emitter<NotificationState> emit,
+  ) async {
+    try {
+      await _firestoreProvider.deleteNotification(event.notificationId);
+    } on FirestoreOperationException catch (e) {
+      emit(NotificationStateError(message: e.message));
+    }
+  }
+
+  Future<void> _onClearAll(
+    NotificationEventClearAll event,
+    Emitter<NotificationState> emit,
+  ) async {
+    try {
+      await _firestoreProvider.deleteAllNotifications(event.recipientId);
+    } on FirestoreOperationException catch (e) {
+      emit(NotificationStateError(message: e.message));
+    }
+  }
   // ============================================================
   // CLEANUP
   // ============================================================

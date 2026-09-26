@@ -8,6 +8,7 @@
 // RECOMMENDATION LIST CARD — PRODUCTION READY (RESPONSIVE)
 // ============================================================
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:forfood/core/theme/app_color.dart';
@@ -48,14 +49,19 @@ class RecommendationListCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
+                        ClipRRect(
               borderRadius: BorderRadius.circular(36),
-              child: Image.network(
-                imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
                 width: 116 * widthScale,
                 height: 132 * widthScale,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                placeholder: (_, __) => Container(
+                  width: 116 * widthScale,
+                  height: 132 * widthScale,
+                  color: const Color(0xFFFFDECF),
+                ),
+                errorWidget: (_, __, ___) => Container(
                   width: 116 * widthScale,
                   height: 132 * widthScale,
                   color: const Color(0xFFFF9E74),

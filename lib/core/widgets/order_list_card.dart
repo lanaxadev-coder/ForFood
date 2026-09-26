@@ -136,8 +136,8 @@ class OrderListCard extends StatelessWidget {
                           onTap: onAction,
                           child: Container(
                             padding: EdgeInsets.symmetric(
-                              horizontal: 12 * widthScale,
-                              vertical: 6,
+                              horizontal: 5 * widthScale,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
                               color: AppColor.orange,
@@ -147,7 +147,7 @@ class OrderListCard extends StatelessWidget {
                               actionLabel,
                               style: TextStyle(
                                 color: AppColor.white,
-                                fontSize: 15 * widthScale,
+                                fontSize: 13 * widthScale,
                                 fontFamily: 'League Spartan',
                                 fontWeight: FontWeight.w500,
                               ),
@@ -159,8 +159,8 @@ class OrderListCard extends StatelessWidget {
                             onTap: onSecondaryAction,
                             child: Container(
                               padding: EdgeInsets.symmetric(
-                                horizontal: 12 * widthScale,
-                                vertical: 6,
+                                horizontal: 6 * widthScale,
+                                vertical: 5,
                               ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFDECF),
@@ -170,7 +170,7 @@ class OrderListCard extends StatelessWidget {
                                 'Order Again',
                                 style: TextStyle(
                                   color: AppColor.red,
-                                  fontSize: 15 * widthScale,
+                                  fontSize: 13 * widthScale,
                                   fontFamily: 'League Spartan',
                                   fontWeight: FontWeight.w400,
                                 ),

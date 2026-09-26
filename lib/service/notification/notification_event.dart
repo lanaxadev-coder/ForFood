@@ -50,3 +50,16 @@ class NotificationEventMarkAllAsRead extends NotificationEvent {
 
   const NotificationEventMarkAllAsRead({required this.recipientId});
 }
+/// Fired when user deletes a single notification.
+class NotificationEventDelete extends NotificationEvent {
+  final String notificationId;
+
+  const NotificationEventDelete({required this.notificationId});
+}
+
+/// Fired when user clears all notifications.
+class NotificationEventClearAll extends NotificationEvent {
+  final String recipientId;
+
+  const NotificationEventClearAll({required this.recipientId});
+}

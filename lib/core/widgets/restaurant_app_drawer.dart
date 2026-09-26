@@ -163,7 +163,7 @@ Positioned(
             _buildMenuItem(
               iconPosition: const Offset(33, 320),
               textPosition: const Offset(100, 330),
-              icon: 'assets/icons/star.svg',   // reuse your star SVG
+              icon: 'assets/icons/reviewIcon.svg',   // reuse your star SVG
               text: 'Reviews',
               onTap: () => onReviews(context),
             ),

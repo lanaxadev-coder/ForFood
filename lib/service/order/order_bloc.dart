@@ -16,6 +16,7 @@ import 'package:forfood/service/exceptions/domain_exceptions.dart';
 import 'package:forfood/service/notification/notification_trigger.dart';
 import 'package:forfood/service/order/order_event.dart';
 import 'package:forfood/service/order/order_state.dart';
+import 'package:forfood/utilities/friendly_error.dart';
 
 class OrderBloc extends Bloc<OrderEvent, OrderState> {
   final FirestoreProvider _firestoreProvider;
@@ -79,7 +80,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         order: createdOrder,
       ));
     } on FirestoreOperationException catch (e) {
-      emit(OrderStateError(message: e.message));
+      emit(OrderStateError(message: friendlyError(e)));
     } catch (e) {
       emit(OrderStateError(message: 'Failed to place order: $e'));
     }
@@ -252,7 +253,7 @@ Future<void> _onReorderItems(
         currentOrders: _lastLoadedOrders, // 👈 preserve list
       ));
     } on FirestoreOperationException catch (e) {
-      emit(OrderStateError(message: e.message));
+      emit(OrderStateError(message: friendlyError(e)));
     } catch (e) {
       emit(OrderStateError(message: 'Failed to accept order: $e'));
     }
@@ -276,7 +277,7 @@ Future<void> _onReorderItems(
         currentOrders: _lastLoadedOrders, // 👈 preserve list
       ));
     } on FirestoreOperationException catch (e) {
-      emit(OrderStateError(message: e.message));
+      emit(OrderStateError(message: friendlyError(e)));
     } catch (e) {
       emit(OrderStateError(message: 'Failed to reject order: $e'));
     }
@@ -369,7 +370,7 @@ Future<void> _onProgressToNextStage(
       currentOrders: _lastLoadedOrders,
     ));
   } on FirestoreOperationException catch (e) {
-    emit(OrderStateError(message: e.message));
+    emit(OrderStateError(message: friendlyError(e)));
   }
 }
   // ============================================================

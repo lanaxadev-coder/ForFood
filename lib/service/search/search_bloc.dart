@@ -13,6 +13,7 @@ import 'package:forfood/service/database/firestore_provider.dart';
 import 'package:forfood/service/exceptions/domain_exceptions.dart';
 import 'package:forfood/service/search/search_event.dart';
 import 'package:forfood/service/search/search_state.dart';
+import 'package:forfood/utilities/friendly_error.dart';
 import 'package:forfood/utilities/geohach_util.dart';
 
 class SearchBloc extends Bloc<SearchEvent, SearchState> {
@@ -72,13 +73,19 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       final prefixes = GeohashUtil.neighbours(centerPrefix);
       debugPrint('🔍 [SEARCH] prefixes=$prefixes');
 
+          // ✅ PARALLEL: fire all 9 geohash queries at once.
+      final resultSets = await Future.wait(
+        prefixes.map((prefix) {
+          debugPrint('🔍 [SEARCH] querying prefix="$prefix"');
+          return _firestoreProvider.searchRestaurantsByGeohashPrefix(prefix);
+        }),
+      );
+
       final restaurants = <RestaurantModel>[];
       final seen = <String>{};
-      for (final prefix in prefixes) {
-        debugPrint('🔍 [SEARCH] querying prefix="$prefix"');
-        final results = await _firestoreProvider
-            .searchRestaurantsByGeohashPrefix(prefix);
-        debugPrint('🔍 [SEARCH]   → got ${results.length} docs');
+      for (int i = 0; i < prefixes.length; i++) {
+        final results = resultSets[i];
+        debugPrint('🔍 [SEARCH]   → prefix "${prefixes[i]}" got ${results.length} docs');
         for (final r in results) {
           if (seen.add(r.id)) {
             restaurants.add(r);
@@ -99,23 +106,23 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       // ═══════════════════════════════════════════════════════════
       // DEBUG 3 — PER RESTAURANT FILTER WALK
       // ═══════════════════════════════════════════════════════════
+           // ✅ PARALLEL: fetch all restaurant menus at once, then filter in memory.
+      final menuLists = await Future.wait(
+        restaurants.map(
+          (r) => _firestoreProvider.getMenuItemsByRestaurantId(r.id),
+        ),
+      );
+
       final searchResults = <SearchResult>[];
 
-      for (final restaurant in restaurants) {
+      for (int i = 0; i < restaurants.length; i++) {
+        final restaurant = restaurants[i];
+        final menuItems = menuLists[i];
+
         debugPrint('───');
         debugPrint('🔍 [SEARCH] Checking "${restaurant.name}" '
             '(${restaurant.id})');
-
-        final menuItems = await _firestoreProvider
-            .getMenuItemsByRestaurantId(restaurant.id);
         debugPrint('🔍 [SEARCH]   menu items: ${menuItems.length}');
-
-        if (menuItems.isNotEmpty) {
-          for (final m in menuItems) {
-            debugPrint(
-                '🔍 [SEARCH]     "${m.name}" — \$${m.price.toStringAsFixed(2)}');
-          }
-        }
 
         final affordableItems = menuItems
             .where((item) => item.price <= event.maxBudget)
@@ -123,10 +130,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
         debugPrint(
             '🔍 [SEARCH]   affordable (≤\$${event.maxBudget}): ${affordableItems.length}');
 
-        if (affordableItems.isEmpty) {
-          debugPrint('🔍 [SEARCH]   ✗ SKIP — nothing under budget');
-          continue;
-        }
+        if (affordableItems.isEmpty) continue;
 
         affordableItems.sort((a, b) => a.price.compareTo(b.price));
         final matchingItem = _findBestMatchingItem(
@@ -134,12 +138,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
           event.craving,
         );
 
-        if (matchingItem == null) {
-          debugPrint('🔍 [SEARCH]   ✗ SKIP — no matching item');
-          continue;
-        }
-        debugPrint('🔍 [SEARCH]   match="${matchingItem.name}" '
-            'price=\$${matchingItem.price.toStringAsFixed(2)}');
+        if (matchingItem == null) continue;
 
         final distanceKm = _calculateDistanceKm(
           userLatitude: event.userLatitude,
@@ -147,14 +146,8 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
           restaurantLatitude: restaurant.latitude,
           restaurantLongitude: restaurant.longitude,
         );
-        debugPrint(
-            '🔍 [SEARCH]   distance=${distanceKm.toStringAsFixed(2)} km');
 
-        if (distanceKm > _maxSearchRadiusKm) {
-          debugPrint(
-              '🔍 [SEARCH]   ✗ SKIP — beyond ${_maxSearchRadiusKm}km');
-          continue;
-        }
+        if (distanceKm > _maxSearchRadiusKm) continue;
 
         searchResults.add(SearchResult(
           restaurant: restaurant,
@@ -162,9 +155,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
           distanceKm: distanceKm,
           isBestMatch: false,
         ));
-        debugPrint('🔍 [SEARCH]   ✅ ADDED');
       }
-
       debugPrint('🔍 [SEARCH] searchResults: ${searchResults.length}');
 
       if (searchResults.isEmpty) {
@@ -200,13 +191,13 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       ));
     } on PriceFilterOutOfRangeException catch (e) {
       debugPrint('❌ [SEARCH] PriceFilterOutOfRange: ${e.message}');
-      emit(SearchStateError(message: e.message));
+      emit(SearchStateError(message: friendlyError(e)));
     } on FirestoreOperationException catch (e) {
       debugPrint('❌ [SEARCH] FirestoreOperation: ${e.message}');
-      emit(SearchStateError(message: e.message));
+      emit(SearchStateError(message: friendlyError(e)));
     } on LocationUnavailableException catch (e) {
       debugPrint('❌ [SEARCH] LocationUnavailable: ${e.message}');
-      emit(SearchStateError(message: e.message));
+      emit(SearchStateError(message: friendlyError(e)));
     } catch (e, stack) {
       debugPrint('❌ [SEARCH] Unknown error: $e');
       debugPrint('❌ [SEARCH] Stack: $stack');
@@ -221,18 +212,147 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     emit(const SearchStateInitial());
   }
 
+   // ============================================================
+  // SMART CRAVING MATCHER
+  // ============================================================
+  // Scores each affordable item against the user's craving using
+  // a tiered weighting:
+  //
+  //   1. Exact name match              → 100
+  //   2. Item name starts with query   → 80
+  //   3. Query is a whole word in name → 60
+  //   4. Query is a substring          → 40
+  //   5. Fuzzy match (1-2 typos)       → 20
+  //
+  // Plural handling ("pizzas" → "pizza") and token intersection
+  // for multi-word queries ("chicken burger") are applied first.
+  // ============================================================
   MenuItemModel? _findBestMatchingItem(
     List<MenuItemModel> affordableItems,
     String craving,
   ) {
-    if (craving.isEmpty) {
-      return affordableItems.first;
+    final query = craving.trim().toLowerCase();
+    if (query.isEmpty) return affordableItems.first;
+
+    // Tokenize query on whitespace.
+    final queryTokens = _tokenize(query);
+    if (queryTokens.isEmpty) return affordableItems.first;
+
+    MenuItemModel? best;
+    int bestScore = 0;
+
+    for (final item in affordableItems) {
+      final name = item.name.toLowerCase();
+      final nameTokens = _tokenize(name);
+
+      int score = 0;
+
+      // Full-query score (bonus for matching the whole phrase).
+      final fullScore = _scorePhraseMatch(query, name);
+      score += fullScore;
+
+      // Token-level score: how many query tokens appear in the name?
+      int tokenHits = 0;
+      for (final qt in queryTokens) {
+        final tokenScore = _scoreTokenInName(qt, nameTokens, name);
+        if (tokenScore > 0) {
+          tokenHits++;
+          score += tokenScore;
+        }
+      }
+
+      // Multi-word queries: reward items that match MOST of the tokens.
+      if (queryTokens.length > 1 && tokenHits == queryTokens.length) {
+        score += 30; // full-phrase bonus
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = item;
+      }
     }
-    final cravingLower = craving.toLowerCase();
-    return affordableItems.firstWhere(
-      (item) => item.name.toLowerCase().contains(cravingLower),
-      orElse: () => affordableItems.first,
-    );
+
+    // If nothing scored, return null → restaurant is skipped.
+    // We don't fall back to "cheapest item" — a pizza search shouldn't
+    // show a beef taco.
+    return bestScore > 0 ? best : null;
+  }
+
+  /// Splits a string into lowercase word tokens.
+  List<String> _tokenize(String input) {
+    return input
+        .split(RegExp(r'[\s\-_,\.]+'))
+        .where((t) => t.isNotEmpty)
+        .toList();
+  }
+
+  /// Score for the full query phrase against the item name.
+  int _scorePhraseMatch(String query, String name) {
+    if (name == query) return 100;
+    if (name.startsWith(query)) return 80;
+    // Whole-word match: "pizza" in "margherita pizza"
+    final wordBoundary = RegExp(r'(^|\s)' + RegExp.escape(query) + r'(\s|$)');
+    if (wordBoundary.hasMatch(name)) return 60;
+    if (name.contains(query)) return 40;
+    return 0;
+  }
+
+  /// Score for a single query token against the item name's tokens.
+  int _scoreTokenInName(String queryToken, List<String> nameTokens, String name) {
+    // Singular/plural normalization.
+    final singular = _singularize(queryToken);
+
+    for (final nt in nameTokens) {
+      final ns = _singularize(nt);
+      if (nt == queryToken || ns == singular) return 60; // exact word
+      if (nt.startsWith(queryToken) || ns.startsWith(singular)) return 40;
+      if (nt.contains(queryToken) || ns.contains(singular)) return 30;
+      if (_levenshtein(nt, queryToken) <= 2) return 20; // typo tolerance
+    }
+    // Last-chance substring check on the full name.
+    if (name.contains(queryToken)) return 30;
+    return 0;
+  }
+
+  /// Crude English singularization — good enough for food names.
+  String _singularize(String word) {
+    if (word.length < 4) return word;
+    if (word.endsWith('ies') && word.length > 4) {
+      return '${word.substring(0, word.length - 3)}y';
+    }
+    if (word.endsWith('es') && word.length > 4) {
+      return word.substring(0, word.length - 2);
+    }
+    if (word.endsWith('s') && !word.endsWith('ss')) {
+      return word.substring(0, word.length - 1);
+    }
+    return word;
+  }
+
+  /// Levenshtein distance — how many single-char edits to turn a into b.
+  int _levenshtein(String a, String b) {
+    if (a == b) return 0;
+    if (a.isEmpty) return b.length;
+    if (b.isEmpty) return a.length;
+
+    final prev = List<int>.generate(b.length + 1, (i) => i);
+    final curr = List<int>.filled(b.length + 1, 0);
+
+    for (int i = 1; i <= a.length; i++) {
+      curr[0] = i;
+      for (int j = 1; j <= b.length; j++) {
+        final cost = a[i - 1] == b[j - 1] ? 0 : 1;
+        curr[j] = [
+          curr[j - 1] + 1,
+          prev[j] + 1,
+          prev[j - 1] + cost,
+        ].reduce((x, y) => x < y ? x : y);
+      }
+      for (int k = 0; k <= b.length; k++) {
+        prev[k] = curr[k];
+      }
+    }
+    return prev[b.length];
   }
 
   double _calculateDistanceKm({

@@ -294,7 +294,7 @@ class _CheckoutViewState extends State<CheckoutView> {
       case 3:
             setState(() => _currentIndex = index);   // ✅ highlight
 
-        _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
         break;
       case 4:
             setState(() => _currentIndex = index);   // ✅ highlight

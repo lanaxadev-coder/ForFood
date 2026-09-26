@@ -3,6 +3,7 @@
 // Real drawer + Bottom Nav + Responsive + Shimmer
 // ============================================================
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,6 +24,7 @@ import 'package:forfood/utilities/tab_route.dart';
 import 'package:forfood/view/chat_inbox_view.dart';
 
 import 'package:forfood/view/user/home_page.dart';
+import 'package:forfood/view/user/my_order_view.dart';
 import 'package:forfood/view/user/search_screen.dart';
 
 class LeaveReviewView extends StatefulWidget {
@@ -176,7 +178,7 @@ class _LeaveReviewViewState extends State<LeaveReviewView> {
             setState(() => _currentIndex = index);   // ✅ highlight
 
         // ✅ Cart tab → cart drawer
-        _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
         break;
       case 4:
             setState(() => _currentIndex = index);   // ✅ highlight
@@ -304,28 +306,25 @@ class _LeaveReviewViewState extends State<LeaveReviewView> {
                       child: Column(
                         children: [
                           SizedBox(height: 40 * heightScale),
-                          ClipRRect(
+                                                   ClipRRect(
                             borderRadius: BorderRadius.circular(32),
-                            child: Image.network(
-                              widget.itemImageUrl,
+                            child: CachedNetworkImage(
+                              imageUrl: widget.itemImageUrl,
                               width: 150 * widthScale,
                               height: 150 * heightScale,
                               fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  width: 150 * widthScale,
-                                  height: 150 * heightScale,
-                                  color: const Color(0xFFFFDECF),
-                                  child: const Center(
-                                    child: CircularProgressIndicator(
-                                      color: AppColor.orange,
-                                      strokeWidth: 2,
-                                    ),
+                              placeholder: (_, __) => Container(
+                                width: 150 * widthScale,
+                                height: 150 * heightScale,
+                                color: const Color(0xFFFFDECF),
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppColor.orange,
+                                    strokeWidth: 2,
                                   ),
-                                );
-                              },
-                              errorBuilder: (_, __, ___) => Container(
+                                ),
+                              ),
+                              errorWidget: (_, __, ___) => Container(
                                 width: 150 * widthScale,
                                 height: 150 * heightScale,
                                 color: const Color(0xFFFFDECF),

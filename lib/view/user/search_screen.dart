@@ -24,6 +24,7 @@ import 'package:forfood/service/search/search_state.dart';
 import 'package:forfood/utilities/page_transition.dart';
 import 'package:forfood/utilities/tab_route.dart';
 import 'package:forfood/view/chat_inbox_view.dart';
+import 'package:forfood/view/user/my_order_view.dart';
 import 'package:forfood/view/user/results.dart';
 import 'package:forfood/view/user/home_page.dart';
 import 'package:geolocator/geolocator.dart';
@@ -312,7 +313,7 @@ class _SearchViewState extends State<SearchView> {
         break;
       case 3:
         // ✅ Cart tab → cart drawer
-        _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
         break;
       case 4:
         // ✅ Profile tab → profile drawer

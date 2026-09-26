@@ -224,16 +224,45 @@ class _OrderChatBodyState extends State<_OrderChatBody> {
                               12 * heightScale,
                             ),
                             itemCount: state.messages.length,
-                            itemBuilder: (context, index) {
+                            
+                            
+                                                      itemBuilder: (context, index) {
                               final msg = state.messages[index];
                               final isMine =
                                   msg.sender == ChatSender.user;
-                              return _MessageBubble(
-                                message: msg,
-                                isMine: isMine,
-                                widthScale: widthScale,
+                              return Dismissible(
+                                key: ValueKey(msg.id),
+                                direction: isMine
+                                    ? DismissDirection.endToStart
+                                    : DismissDirection.none,
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(Icons.delete_outline,
+                                      color: Colors.white, size: 22),
+                                ),
+                                onDismissed: (_) {
+                                  context.read<ChatBloc>().add(
+                                        ChatEventDelete(
+                                          orderId: widget.order.id,
+                                          messageId: msg.id,
+                                        ),
+                                      );
+                                },
+                                child: _MessageBubble(
+                                  message: msg,
+                                  isMine: isMine,
+                                  widthScale: widthScale,
+                                ),
                               );
                             },
+
+
                           );
                         }
 

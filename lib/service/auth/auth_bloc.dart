@@ -12,6 +12,7 @@ import 'package:forfood/service/auth/auth_provider.dart';
 import 'package:forfood/service/auth/auth_user.dart';
 import 'package:forfood/service/exceptions/domain_exceptions.dart';
 import 'package:forfood/service/notification/fcm_service.dart';
+import 'package:forfood/utilities/friendly_error.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final IAuthProvider _authProvider;
@@ -71,37 +72,34 @@ final user = await _authProvider.getCurrentUser();  // ✅ AWAIT!
       emit(const AuthStateLoggedOut());
     } on AuthenticationException catch (e) {
       print('❌ AUTH BLOC: SignOut failed: ${e.message}');
-      emit(AuthStateError(message: e.message));
+      emit(AuthStateError(message: friendlyError(e)));
     } catch (e) {
       print('❌ AUTH BLOC: SignOut unknown error: $e');
       emit(AuthStateError(message: 'Sign out failed: $e'));
     }
+  }Future<void> _onDeleteAccount(
+  AuthEventDeleteAccount event,
+  Emitter<AuthState> emit,
+) async {
+  print('🐛 BLOC: _onDeleteAccount started');
+  emit(const AuthStateLoading());
+
+  try {
+    await _authProvider.deleteAccount();
+    print('🐛 BLOC: provider.deleteAccount() succeeded');
+    emit(const AuthStateLoggedOut());
+    print('🐛 BLOC: emitted AuthStateLoggedOut');
+  } on AccountDeletionException catch (e) {
+    print('🐛 BLOC: AccountDeletionException — ${e.message}');
+    emit(AuthStateError(message: friendlyError(e)));
+  } on AuthenticationException catch (e) {
+    print('🐛 BLOC: AuthenticationException — ${e.message}');
+    emit(AuthStateError(message: friendlyError(e)));
+  } catch (e) {
+    print('🐛 BLOC: unknown — $e');
+    emit(AuthStateError(message: 'Account deletion failed: $e'));
   }
-
-  Future<void> _onDeleteAccount(
-    AuthEventDeleteAccount event,
-    Emitter<AuthState> emit,
-  ) async {
-    print('🔵 AUTH BLOC: _onDeleteAccount started');
-    emit(const AuthStateLoading());
-
-    try {
-      await _authProvider.deleteAccount();
-      print('✅ AUTH BLOC: Delete success — emitting LoggedOut');
-      emit(const AuthStateLoggedOut());
-    } on AccountDeletionException catch (e) {
-      print('❌ AUTH BLOC: Delete failed: ${e.message}');
-      emit(AuthStateError(message: e.message));
-    } on AuthenticationException catch (e) {
-      print('❌ AUTH BLOC: Auth error on delete: ${e.message}');
-      emit(AuthStateError(message: e.message));
-    } catch (e) {
-      print('❌ AUTH BLOC: Delete unknown error: $e');
-      emit(AuthStateError(message: 'Account deletion failed: $e'));
-    }
-  }
-
-  Future<void> _onForgotPassword(
+}  Future<void> _onForgotPassword(
     AuthEventForgotPassword event,
     Emitter<AuthState> emit,
   ) async {
@@ -114,7 +112,7 @@ final user = await _authProvider.getCurrentUser();  // ✅ AWAIT!
       emit(const AuthStateLoggedOut());
     } on AuthenticationException catch (e) {
       print('❌ AUTH BLOC: Reset failed: ${e.message}');
-      emit(AuthStateError(message: e.message));
+      emit(AuthStateError(message: friendlyError(e)));
     } catch (e) {
       print('❌ AUTH BLOC: Reset unknown error: $e');
       emit(AuthStateError(message: 'Password reset failed: $e'));
@@ -137,10 +135,10 @@ final user = await _authProvider.getCurrentUser();  // ✅ AWAIT!
       emit(const AuthStateLoggedOut());
     } on InvalidCredentialsException catch (e) {
       print('❌ AUTH BLOC: Invalid credentials: ${e.message}');
-      emit(AuthStateError(message: e.message));
+      emit(AuthStateError(message: friendlyError(e)));
     } on AuthenticationException catch (e) {
       print('❌ AUTH BLOC: Auth error: ${e.message}');
-      emit(AuthStateError(message: e.message));
+      emit(AuthStateError(message: friendlyError(e)));
     } catch (e) {
       print('❌ AUTH BLOC: Change password error: $e');
       emit(AuthStateError(message: 'Password change failed: $e'));
@@ -160,7 +158,7 @@ final user = await _authProvider.getCurrentUser();  // ✅ AWAIT!
       emit(AuthStateLoggedIn(user: user));
     } on AuthenticationException catch (e) {
       print('❌ AUTH BLOC: Google sign in failed: ${e.message}');
-      emit(AuthStateError(message: e.message));
+      emit(AuthStateError(message: friendlyError(e)));
     } catch (e) {
       print('❌ AUTH BLOC: Google sign in unknown error: $e');
       emit(AuthStateError(message: 'Google sign-in failed: $e'));

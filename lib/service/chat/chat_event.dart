@@ -40,3 +40,14 @@ class ChatEventStreamError extends ChatEvent {
 
   const ChatEventStreamError({required this.message});
 }
+
+/// Fired when the user deletes a message.
+class ChatEventDelete extends ChatEvent {
+  final String orderId;
+  final String messageId;
+
+  const ChatEventDelete({
+    required this.orderId,
+    required this.messageId,
+  });
+}

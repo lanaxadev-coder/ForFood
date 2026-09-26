@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:forfood/view/user/my_order_view.dart';
 import 'package:provider/provider.dart';
 
 import 'package:forfood/core/theme/app_color.dart';
@@ -103,7 +104,7 @@ class _LanguageSettingViewState extends State<LanguageSettingView> {
             setState(() => _currentIndex = index);   // ✅ highlight
 
         // ✅ Cart tab → cart drawer
-        _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
         break;
       case 4:
             setState(() => _currentIndex = index);   // ✅ highlight

@@ -4,10 +4,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:forfood/utilities/page_transition.dart';
-import 'package:forfood/view/chat_inbox_view.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';  // ✅ ADDED
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:forfood/core/theme/app_color.dart';
 import 'package:forfood/core/widgets/bottom_nav_dart.dart';
@@ -15,7 +13,10 @@ import 'package:forfood/core/widgets/drawer_helpers.dart';
 import 'package:forfood/core/widgets/pricing_card.dart';
 import 'package:forfood/service/auth/auth_bloc.dart';
 import 'package:forfood/service/auth/auth_state.dart';
+import 'package:forfood/service/database/firestore_provider.dart';
 import 'package:forfood/service/revenuecat/revenuecat_service.dart';
+import 'package:forfood/utilities/page_transition.dart';
+import 'package:forfood/view/chat_inbox_view.dart';
 import 'package:forfood/view/restaurant/home_page.dart';
 import 'package:forfood/view/restaurant/incoming_order.dart';
 import 'package:forfood/view/restaurant/menu.dart';
@@ -63,32 +64,53 @@ class _SubscriptionViewState extends State<SubscriptionView> {
 
   Future<void> _handlePurchase(Package package) async {
     setState(() => _isLoading = true);
+
     try {
       final customerInfo = await RevenueCatService.purchasePackage(package);
 
-      if (customerInfo.entitlements.active.isNotEmpty) {
+      final isPremium =
+          customerInfo.entitlements.active.containsKey('premium');
+
+      if (!isPremium) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Subscription activated successfully!'),
-              backgroundColor: Colors.green,
+              content: Text('Purchase completed but premium is not active.'),
+              backgroundColor: Colors.orange,
             ),
           );
-
-          if (widget.isFromSignup) {
-            Navigator.of(context).pushAndRemoveUntil(
-              fadeSlideRoute(const RestaurantHomeView()),
-              (route) => false,
-            );
-          } else {
-            Navigator.pop(context);
-          }
         }
+        return;
+      }
+
+      // Persist to Firestore so the restaurant is actually marked premium.
+      await _persistPremiumStatus();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Subscription activated successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      if (widget.isFromSignup) {
+        Navigator.of(context).pushAndRemoveUntil(
+          fadeSlideRoute(const RestaurantHomeView()),
+          (route) => false,
+        );
+      } else {
+        await Future.delayed(const Duration(milliseconds: 800));
+        if (mounted) Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Purchase failed: $e')),
+          SnackBar(
+            content: Text('Purchase failed: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -96,6 +118,26 @@ class _SubscriptionViewState extends State<SubscriptionView> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  /// Writes subscriptionActive + subscriptionExpiry to the restaurant doc.
+  Future<void> _persistPremiumStatus() async {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthStateLoggedIn) return;
+
+    final firestoreProvider = FirestoreProvider();
+    final restaurant =
+        await firestoreProvider.getRestaurantByOwnerId(authState.user.id);
+    if (restaurant == null) return;
+
+    final expiry = DateTime.now().add(const Duration(days: 30));
+
+    await firestoreProvider.updateRestaurant(
+      restaurant.copyWith(
+        subscriptionActive: true,
+        subscriptionExpiry: expiry,
+      ),
+    );
   }
 
   void _handleStartTrial() {
@@ -113,12 +155,12 @@ class _SubscriptionViewState extends State<SubscriptionView> {
       _handlePurchase(trialPackage);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Trial not available. Please select a plan.')),
+        const SnackBar(
+            content: Text('Trial not available. Please select a plan.')),
       );
     }
   }
 
-  // ✅ ADDED: Launch URLs
   Future<void> _launchUrl(String urlString) async {
     final url = Uri.parse(urlString);
     try {
@@ -134,36 +176,57 @@ class _SubscriptionViewState extends State<SubscriptionView> {
     }
   }
 
-  // ✅ FIXED: Bottom nav navigation
- void _handleBottomNavTap(int index) {
-  if (index == _currentIndex) return;
+  /// Handles a plan tap. If packages haven't loaded, reloads them and
+  /// tells the user to tap again — instead of silently doing nothing.
+  Future<void> _onPlanTap(String productId) async {
+    if (_packages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Loading plans… tap again in a moment.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 1),
+        ),
+      );
+      await _loadPackages();
+      return;
+    }
 
-  switch (index) {
-    case 0:
-      Navigator.of(context).pushAndRemoveUntil(
-        fadeSlideRoute(const RestaurantHomeView()),
-        (route) => false,
-      );
-      break;
-    case 1:
-      Navigator.of(context).pushAndRemoveUntil(
-        fadeSlideRoute(const OrdersView()),
-        (route) => false,
-      );
-      break;
-    case 2:
-      Navigator.of(context).push(fadeSlideRoute(const ChatInboxView()));
-      break;
-    case 3:
-      Navigator.of(context).push(fadeSlideRoute(const MenuListView()));
-      break;
-    case 4:
-      Navigator.of(context).push(
-        fadeSlideRoute(const ProfileViewRestaurant()),
-      );
-      break;
+    final package = _packages.firstWhere(
+      (p) => p.storeProduct.identifier == productId,
+      orElse: () => _packages.first,
+    );
+    _handlePurchase(package);
   }
-}
+
+  void _handleBottomNavTap(int index) {
+    if (index == _currentIndex) return;
+
+    switch (index) {
+      case 0:
+        Navigator.of(context).pushAndRemoveUntil(
+          fadeSlideRoute(const RestaurantHomeView()),
+          (route) => false,
+        );
+        break;
+      case 1:
+        Navigator.of(context).pushAndRemoveUntil(
+          fadeSlideRoute(const OrdersView()),
+          (route) => false,
+        );
+        break;
+      case 2:
+        Navigator.of(context).push(fadeSlideRoute(const ChatInboxView()));
+        break;
+      case 3:
+        Navigator.of(context).push(fadeSlideRoute(const MenuListView()));
+        break;
+      case 4:
+        Navigator.of(context).push(
+          fadeSlideRoute(const ProfileViewRestaurant()),
+        );
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -263,21 +326,15 @@ class _SubscriptionViewState extends State<SubscriptionView> {
                   SizedBox(height: 40 * heightScale),
 
                   if (_isLoading)
-                    const Center(child: CircularProgressIndicator(color: AppColor.orange))
+                    const Center(
+                      child: CircularProgressIndicator(color: AppColor.orange),
+                    )
                   else ...[
                     PricingCard(
                       planName: 'Yearly',
                       subtitle: '6 months free, then \$40/yr',
                       price: '\$40',
-                      onTap: () {
-                        if (_packages.isNotEmpty) {
-                          final yearlyPackage = _packages.firstWhere(
-                            (p) => p.storeProduct.identifier == 'forfood_yearly',
-                            orElse: () => _packages.first,
-                          );
-                          _handlePurchase(yearlyPackage);
-                        }
-                      },
+                      onTap: () => _onPlanTap('forfood_yearly'),
                       perMonthYear: '/yr',
                     ),
                     SizedBox(height: 25 * heightScale),
@@ -285,15 +342,7 @@ class _SubscriptionViewState extends State<SubscriptionView> {
                       planName: 'Monthly',
                       subtitle: '6 months free, then \$5/mo',
                       price: '\$5',
-                      onTap: () {
-                        if (_packages.isNotEmpty) {
-                          final monthlyPackage = _packages.firstWhere(
-                            (p) => p.storeProduct.identifier == 'forfood_monthly',
-                            orElse: () => _packages.first,
-                          );
-                          _handlePurchase(monthlyPackage);
-                        }
-                      },
+                      onTap: () => _onPlanTap('forfood_monthly'),
                       perMonthYear: '/mo',
                     ),
                   ],
@@ -339,7 +388,8 @@ class _SubscriptionViewState extends State<SubscriptionView> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       GestureDetector(
-                        onTap: () => _launchUrl('https://www.forfood.com/terms-of-service'),
+                        onTap: () => _launchUrl(
+                            'https://www.forfood.com/terms-of-service'),
                         child: Text(
                           'Terms of Service',
                           style: TextStyle(
@@ -352,7 +402,8 @@ class _SubscriptionViewState extends State<SubscriptionView> {
                       ),
                       SizedBox(width: 20 * widthScale),
                       GestureDetector(
-                        onTap: () => _launchUrl('https://www.forfood.com/privacy-policy'),
+                        onTap: () => _launchUrl(
+                            'https://www.forfood.com/privacy-policy'),
                         child: Text(
                           'Privacy Policy',
                           style: TextStyle(

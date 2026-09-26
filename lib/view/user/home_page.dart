@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:forfood/utilities/tab_route.dart';
 import 'package:forfood/view/chat_inbox_view.dart';
+import 'package:forfood/view/user/my_order_view.dart';
 
 import 'package:geolocator/geolocator.dart';
 
@@ -548,7 +549,7 @@ void _handleBottomNavTap(int index) {
     case 3:
           setState(() => _currentIndex = index);   // ✅ highlight
 
-      _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
       break;
     case 4:
           setState(() => _currentIndex = index);   // ✅ highlight
@@ -564,17 +565,19 @@ void _handleBottomNavTap(int index) {
     final screenHeight = MediaQuery.of(context).size.height;
     final widthScale = screenWidth / 393;
     final heightScale = screenHeight / 852;
-
-    String userName = 'Guest';
-    String userEmail = 'guest@email.com';
-    String profileImageUrl = '';
-
     final authState = context.read<AuthBloc>().state;
-    if (authState is AuthStateLoggedIn) {
-      userName = authState.user.fullName;
-      userEmail = authState.user.email;
-      profileImageUrl = authState.user.profileImageUrl ?? '';
+    if (authState is! AuthStateLoggedIn) {
+      // Auth just ended — main.dart will swap in the Join screen.
+      // Render nothing for this one frame instead of flashing "Guest".
+      return const Scaffold(
+        backgroundColor: AppColor.yellow,
+        body: SizedBox.shrink(),
+      );
     }
+
+    final userName = authState.user.fullName;
+    final userEmail = authState.user.email;
+    final profileImageUrl = authState.user.profileImageUrl ?? '';
 
     return Scaffold(
       key: _scaffoldKey,

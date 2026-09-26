@@ -19,6 +19,7 @@ import 'package:forfood/utilities/page_transition.dart';
 import 'package:forfood/utilities/tab_route.dart';
 import 'package:forfood/view/chat_inbox_view.dart';
 import 'package:forfood/view/user/language_settings.dart';
+import 'package:forfood/view/user/my_order_view.dart';
 import 'package:forfood/view/user/notification_setting.dart';
 import 'package:forfood/view/user/password_setting.dart';
 import 'package:forfood/view/user/home_page.dart';
@@ -72,7 +73,7 @@ class _SettingsViewState extends State<SettingsView> {
         break;
       case 3:
         // ✅ Cart tab → cart drawer
-        _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
         break;
       case 4:
         // ✅ Profile tab → profile drawer

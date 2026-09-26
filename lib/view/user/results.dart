@@ -27,6 +27,7 @@ import 'package:forfood/service/search/search_state.dart';
 import 'package:forfood/utilities/haptic_feedback.dart';
 import 'package:forfood/utilities/tab_route.dart';
 import 'package:forfood/view/chat_inbox_view.dart';
+import 'package:forfood/view/user/my_order_view.dart';
 
 import 'package:forfood/view/user/retaurant_detail_screen.dart';
 import 'package:forfood/view/user/home_page.dart';
@@ -91,7 +92,7 @@ class _ResultsViewState extends State<ResultsView> {
             setState(() => _currentIndex = index);   // ✅ highlight
 
         // ✅ Cart tab → cart drawer
-        _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
         break;
       case 4:
             setState(() => _currentIndex = index);   // ✅ highlight

@@ -15,6 +15,7 @@ import 'package:forfood/service/chat/chat_event.dart';
 import 'package:forfood/service/chat/chat_state.dart';
 import 'package:forfood/service/database/firestore_provider.dart';
 import 'package:forfood/service/exceptions/domain_exceptions.dart';
+import 'package:forfood/utilities/friendly_error.dart';
 
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final FirestoreProvider _firestoreProvider;
@@ -28,6 +29,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatEventSend>(_onSend);
     on<ChatEventMessagesUpdated>(_onMessagesUpdated);
     on<ChatEventStreamError>(_onStreamError);
+        on<ChatEventDelete>(_onDelete);
   }
 
   // ============================================================
@@ -81,12 +83,29 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       // No emit — the stream will push the new message back
       // via ChatEventMessagesUpdated.
     } on FirestoreOperationException catch (e) {
-      emit(ChatStateError(message: e.message));
+      emit(ChatStateError(message: friendlyError(e)));
     } catch (e) {
       emit(ChatStateError(message: 'Failed to send: $e'));
     }
   }
 
+
+  Future<void> _onDelete(
+    ChatEventDelete event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      await _firestoreProvider.deleteOrderMessage(
+        orderId: event.orderId,
+        messageId: event.messageId,
+      );
+      // Stream pushes updated messages back automatically.
+    } on FirestoreOperationException catch (e) {
+      emit(ChatStateError(message: e.message));
+    } catch (e) {
+      emit(ChatStateError(message: 'Failed to delete: $e'));
+    }
+  }
   // ============================================================
   // INTERNAL STREAM HANDLERS
   // ============================================================

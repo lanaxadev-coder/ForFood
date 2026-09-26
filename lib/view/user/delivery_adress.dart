@@ -24,6 +24,7 @@ import 'package:forfood/view/chat_inbox_view.dart';
 
 import 'package:forfood/view/user/add_address_view.dart';
 import 'package:forfood/view/user/home_page.dart';
+import 'package:forfood/view/user/my_order_view.dart';
 import 'package:forfood/view/user/search_screen.dart';
 
 class DeliveryAddressView extends StatefulWidget {
@@ -120,7 +121,7 @@ class _DeliveryAddressViewState extends State<DeliveryAddressView> {
             setState(() => _currentIndex = index);   // ✅ highlight
 
         // ✅ Cart tab → cart drawer
-        _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
         break;
       case 4:
             setState(() => _currentIndex = index);   // ✅ highlight

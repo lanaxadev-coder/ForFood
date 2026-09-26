@@ -13,6 +13,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_cache/flutter_map_cache.dart';
+import 'package:forfood/core/widgets/catched_tile_provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
@@ -50,7 +52,7 @@ class LocationMapView extends StatefulWidget {
 class _LocationMapViewState extends State<LocationMapView> {
   final MapController _mapController = MapController();
   final FirestoreProvider _firestoreProvider = FirestoreProvider();
-
+  CachedTileProvider? _cachedTileProvider;
   // ── route / user ──
   Position? _userPosition;
   List<LatLng> _routePoints = [];
@@ -76,6 +78,9 @@ class _LocationMapViewState extends State<LocationMapView> {
     _startCompass();
     _initialize();
     _loadAllRestaurants();
+        buildCachedTileProvider().then((p) {
+      if (mounted) setState(() => _cachedTileProvider = p);
+    });
   }
 
   @override
@@ -364,6 +369,9 @@ class _LocationMapViewState extends State<LocationMapView> {
                 userAgentPackageName: 'com.forfood.forfood',
                 maxZoom: 20,
                 maxNativeZoom: 20,
+                  keepBuffer: 5,   // ← ADD THIS
+  tileProvider: _cachedTileProvider,  // null-safe; falls back to default until ready
+
               ),
 
               RichAttributionWidget(

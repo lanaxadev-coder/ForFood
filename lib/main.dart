@@ -2,6 +2,7 @@
 // FORFOOD — MAIN
 // ============================================================
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +11,7 @@ import 'package:forfood/core/theme/app_color.dart';
 import 'package:forfood/service/chat/chat_bloc.dart';
 import 'package:forfood/service/notification/fcm_service.dart';
 import 'package:forfood/service/notification/local_notification_listner.dart';
+import 'package:forfood/service/restaurant_list/restaurant_list_event.dart';
 import 'package:forfood/service/revenuecat/revenuecat_service.dart';
 import 'package:provider/provider.dart';
 
@@ -40,14 +42,13 @@ import 'package:forfood/view/join_user_restaurant.dart';
 import 'package:forfood/view/restaurant/home_page.dart';
 import 'package:forfood/view/user/home_page.dart';
 
+// ── Global keys ─────────────────────────────────────────────
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 // ============================================================
 // SAFE AREA BUILDER
-// - Paints the status bar area brand yellow
-// - Pushes all content below the notch
-// - Shrinks the reported screen height so inner `screenHeight * scale`
-//   math stays accurate
 // ============================================================
 Widget _safeAreaBuilder(BuildContext context, Widget? child) {
   final mq = MediaQuery.of(context);
@@ -76,6 +77,10 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+       FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
   } catch (e) {
     debugPrint('Firebase init failed: $e');
   }
@@ -95,8 +100,20 @@ Future<void> main() async {
   );
 }
 
-class ForFoodApp extends StatelessWidget {
+// ============================================================
+// ROOT APP — StatefulWidget so we can track the last valid screen
+// ============================================================
+class ForFoodApp extends StatefulWidget {
   const ForFoodApp({super.key});
+
+  @override
+  State<ForFoodApp> createState() => _ForFoodAppState();
+}
+
+class _ForFoodAppState extends State<ForFoodApp> {
+  // Remembers the last "real" home screen so `Loading` and `Error`
+  // don't blank the app back to Splash.
+  Widget _lastHome = const SplashScreen();
 
   @override
   Widget build(BuildContext context) {
@@ -149,64 +166,97 @@ class ForFoodApp extends StatelessWidget {
         BlocProvider<ChatBloc>(
           create: (c) => ChatBloc(c.read<FirestoreProvider>()),
         ),
-      ],      child: BlocListener<AuthBloc, AuthState>(
+      ],
+      child: BlocListener<AuthBloc, AuthState>(
+        // ── Nav listener (existing) ─────────────────────────
         listenWhen: (prev, curr) =>
             curr is AuthStateLoggedOut ||
             (curr is AuthStateLoggedIn &&
                 (prev is! AuthStateLoggedIn ||
                     prev.user.id != curr.user.id)),
-        listener: (context, state) async {
+      
+      
+                listener: (context, state) async {
           if (state is AuthStateLoggedIn) {
             await RevenueCatService.initialize(appUserID: state.user.id);
-            // Pop every pushed route so the root home screen becomes visible.
             navigatorKey.currentState?.popUntil((route) => route.isFirst);
+
+            // ✅ PRELOAD: warm the home + map caches before the user lands on them.
+            //    Fires two Firestore queries in the background. The home screen
+            //    and the map will read from Firestore's cache instead of hitting
+            //    the network when they mount.
+            if (!context.mounted) return;
+            context.read<RestaurantListBloc>().add(
+                  const RestaurantListEventFetchRecommendations(),
+                );
+            context.read<RestaurantListBloc>().add(
+                  const RestaurantListEventFetchHighDemands(),
+                );
           } else if (state is AuthStateLoggedOut) {
-            await RevenueCatService.logOut();
-            // Same on logout — return to the join screen.
-            navigatorKey.currentState?.popUntil((route) => route.isFirst);
+             navigatorKey.currentState?.popUntil((route) => route.isFirst);
+            // ✅ RevenueCat logout runs in the background — don't block UI on it.
+            RevenueCatService.logOut();
           }
         },
-        child: BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, authState) {
-            Widget home;
-
-            if (authState is AuthStateLoggedIn) {
-              home = authState.user.role == UserRole.restaurant
-                  ? const RestaurantHomeView()
-                  : const UserHomeView();
-            } else if (authState is AuthStateLoggedOut) {
-              home = const JoinUserRestaurantView();
-            } else {
-              home = const SplashScreen();
+        child: BlocListener<AuthBloc, AuthState>(
+          // ── NEW: Error listener → show snackbar ──────────
+          listenWhen: (prev, curr) =>
+              prev is! AuthStateError && curr is AuthStateError,
+          listener: (context, state) {
+            if (state is AuthStateError) {
+              scaffoldMessengerKey.currentState?.showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 4),
+                ),
+              );
             }
-
-            return MaterialApp(
-              navigatorKey: navigatorKey,
-              title: 'ForFood',
-              debugShowCheckedModeBanner: false,
-              builder: _safeAreaBuilder,
-              theme: ThemeData(
-                fontFamily: 'League Spartan',
-                useMaterial3: true,
-              ),
-              locale: languageProvider.locale,
-              supportedLocales: const [
-                Locale('en'),
-                Locale('ar'),
-                Locale('fr'),
-                Locale('es'),
-                Locale('tr'),
-                Locale('it'),
-              ],
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              home: home,
-            );
           },
+          child: BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, authState) {
+              // Only real states update `_lastHome`.
+              // Loading / Error keep whatever we had before.
+              if (authState is AuthStateLoggedIn) {
+                _lastHome = authState.user.role == UserRole.restaurant
+                    ? const RestaurantHomeView()
+                    : const UserHomeView();
+              } else if (authState is AuthStateLoggedOut) {
+                _lastHome = const JoinUserRestaurantView();
+              } else if (authState is AuthStateInitial) {
+                _lastHome = const SplashScreen();
+              }
+              // else: Loading or Error → _lastHome unchanged
+
+              return MaterialApp(
+                navigatorKey: navigatorKey,
+                scaffoldMessengerKey: scaffoldMessengerKey,
+                title: 'ForFood',
+                debugShowCheckedModeBanner: false,
+                builder: _safeAreaBuilder,
+                theme: ThemeData(
+                  fontFamily: 'League Spartan',
+                  useMaterial3: true,
+                ),
+                locale: languageProvider.locale,
+                supportedLocales: const [
+                  Locale('en'),
+                  Locale('ar'),
+                  Locale('fr'),
+                  Locale('es'),
+                  Locale('tr'),
+                  Locale('it'),
+                ],
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                home: _lastHome,
+              );
+            },
+          ),
         ),
       ),
     );

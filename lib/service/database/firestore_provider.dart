@@ -44,8 +44,10 @@ class FirestoreCollections {
 /// models, and throw [DomainException] subclasses on error.
 class FirestoreProvider {
   final FirebaseFirestore _firestore;
-  static const String _imgbbApiKey = '7e094da09d19bcca58d901b78b8e8a11';
-
+static const String _imgbbApiKey = String.fromEnvironment(
+  'IMGBB_API_KEY',
+  defaultValue: '',
+);
   /// Creates a new [FirestoreProvider] instance.
   ///
   /// [firestore] is injected for testability.
@@ -120,6 +122,68 @@ class FirestoreProvider {
       throw FirestoreOperationException('Failed to delete user: ${e.message}');
     }
   }
+/// Deletes ALL Firestore data tied to a user.
+/// Call this BEFORE `user.delete()` in FirebaseAuthProvider.
+Future<void> deleteAllUserData(String userId) async {
+  try {
+    final batch = _firestore.batch();
+
+    // 1. Delete user doc
+    batch.delete(_firestore.collection('users').doc(userId));
+
+    // 2. Delete all addresses
+    final addresses = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('addresses')
+        .get();
+    for (final doc in addresses.docs) {
+      batch.delete(doc.reference);
+    }
+
+    // 3. Delete all notifications
+    final notifications = await _firestore
+        .collection('notifications')
+        .where('recipientId', isEqualTo: userId)
+        .get();
+    for (final doc in notifications.docs) {
+      batch.delete(doc.reference);
+    }
+
+    // 4. Anonymize user's orders (keep financial record, remove PII)
+    final orders = await _firestore
+        .collection('orders')
+        .where('userId', isEqualTo: userId)
+        .get();
+    for (final doc in orders.docs) {
+      batch.update(doc.reference, {
+        'customerName': 'Deleted User',
+        'customerEmail': null,
+        'customerPhone': null,
+        'deliveryAddress': null,
+      });
+    }
+
+    // 5. Anonymize reviews
+    final reviews = await _firestore
+        .collection('reviews')
+        .where('userId', isEqualTo: userId)
+        .get();
+    for (final doc in reviews.docs) {
+      batch.update(doc.reference, {
+        'userName': 'Deleted User',
+      });
+    }
+
+    await batch.commit();
+    debugPrint('✅ All user data cleared for $userId');
+  } on FirebaseException catch (e) {
+    throw FirestoreOperationException(
+        'Failed to delete user data: ${e.message}');
+  }
+}
+
+
 
 
 
@@ -689,6 +753,41 @@ Future<String> uploadImage({
     return notifications;
   });
 }
+
+
+
+  /// Deletes a single notification.
+  Future<void> deleteNotification(String notificationId) async {
+    try {
+      await _firestore
+          .collection(FirestoreCollections.notifications)
+          .doc(notificationId)
+          .delete();
+    } on FirebaseException catch (e) {
+      throw FirestoreOperationException(
+          'Failed to delete notification: ${e.message}');
+    }
+  }
+
+  /// Deletes all notifications for a recipient.
+  Future<void> deleteAllNotifications(String recipientId) async {
+    try {
+      final snapshot = await _firestore
+          .collection(FirestoreCollections.notifications)
+          .where('recipientId', isEqualTo: recipientId)
+          .get();
+
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    } on FirebaseException catch (e) {
+      throw FirestoreOperationException(
+          'Failed to delete all notifications: ${e.message}');
+    }
+  }
+
   /// Marks a notification as read.
   Future<void> markNotificationAsRead(String notificationId) async {
     try {
@@ -858,7 +957,23 @@ Stream<List<ChatMessageModel>> streamOrderMessages(String orderId) {
         .toList();
   });
 }
-
+  /// Deletes a single chat message from an order.
+  Future<void> deleteOrderMessage({
+    required String orderId,
+    required String messageId,
+  }) async {
+    try {
+      await _firestore
+          .collection(FirestoreCollections.orders)
+          .doc(orderId)
+          .collection('messages')
+          .doc(messageId)
+          .delete();
+    } on FirebaseException catch (e) {
+      throw FirestoreOperationException(
+          'Failed to delete message: ${e.message}');
+    }
+  }
 /// Sends a chat message on an order.
 /// Sends a chat message on an order and notifies the other party.
 /// Sends a chat message on an order and notifies the other party.

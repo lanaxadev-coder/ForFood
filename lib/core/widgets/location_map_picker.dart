@@ -11,6 +11,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_cache/flutter_map_cache.dart';
+import 'package:forfood/core/widgets/catched_tile_provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -45,7 +47,7 @@ class _LocationMapPickerState extends State<LocationMapPicker> {
   final MapController _mapController = MapController();
   final GeocodingService _geocodingService = NominatimGeocodingService();
   final FirestoreProvider _firestoreProvider = FirestoreProvider();
-
+   CachedTileProvider? _cachedTileProvider;
   static const double _defaultLat = 36.7538;
   static const double _defaultLng = 3.0588;
 
@@ -82,6 +84,9 @@ class _LocationMapPickerState extends State<LocationMapPicker> {
     _startCompass();
     _initialize();
     _loadAllRestaurants();
+        buildCachedTileProvider().then((p) {
+      if (mounted) setState(() => _cachedTileProvider = p);
+    });
   }
 
   @override
@@ -437,7 +442,10 @@ class _LocationMapPickerState extends State<LocationMapPicker> {
                 userAgentPackageName: 'com.forfood.forfood',
                 maxZoom: 20,
                 maxNativeZoom: 20,
-              ),
+                  keepBuffer: 5,   // ← ADD THIS
+  tileProvider: _cachedTileProvider,  // null-safe; falls back to default until ready
+
+              ), 
 
               // ✅ Restaurant markers (small, non-interactive)
              if (_showRestaurants && _allRestaurants.isNotEmpty)

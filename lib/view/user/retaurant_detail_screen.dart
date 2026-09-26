@@ -5,6 +5,7 @@
 
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -36,6 +37,7 @@ import 'package:forfood/utilities/tab_route.dart';
 import 'package:forfood/view/chat_inbox_view.dart';
 
 import 'package:forfood/view/user/home_page.dart';
+import 'package:forfood/view/user/my_order_view.dart';
 import 'package:forfood/view/user/search_screen.dart';
 
 class RestaurantDetailView extends StatefulWidget {
@@ -191,7 +193,7 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
     setState(() {
       _selectedItems.clear();
     });
-    _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
   }
 
   // ✅ Drawer openers (already existed)
@@ -286,7 +288,7 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
             setState(() => _currentIndex = index);   // ✅ highlight
 
         // ✅ Cart tab → cart drawer
-        _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
         break;
       case 4:
             setState(() => _currentIndex = index);   // ✅ highlight
@@ -904,19 +906,16 @@ class _FullscreenGalleryViewerState extends State<_FullscreenGalleryViewer> {
                   minScale: 1.0,
                   maxScale: 4.0,
                   child: Center(
-                    child: Image.network(
-                      widget.images[index],
+                      child: CachedNetworkImage(
+                      imageUrl: widget.images[index],
                       fit: BoxFit.contain,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => const Center(
+                      placeholder: (_, __) => const Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                      errorWidget: (_, __, ___) => const Center(
                         child: Icon(
                           Icons.image_not_supported_outlined,
                           color: Colors.white54,

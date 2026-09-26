@@ -120,29 +120,63 @@ class NotificationDrawer extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 60),
-            _Header(unreadCount: unreadCount),
-            Expanded(
+            _Header(
+              unreadCount: unreadCount,
+              showClearAll: notifications.isNotEmpty,
+              onClearAll: () {
+                final authState = context.read<AuthBloc>().state;
+                if (authState is AuthStateLoggedIn) {
+                  context.read<NotificationBloc>().add(
+                        NotificationEventClearAll(
+                          recipientId: authState.user.id,
+                        ),
+                      );
+                }
+              },
+            ),            Expanded(
               child: notifications.isEmpty
                   ? const _EmptyNotifications()
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
+                   : ListView.separated(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        itemCount: notifications.length,
+                        separatorBuilder: (_, __) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Divider(color: const Color(0xFFFFDECF)),
+                        ),
+                        itemBuilder: (context, index) {
+                          final notification = notifications[index];
+                          return Dismissible(
+                            key: ValueKey(notification.id),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.delete_outline,
+                                  color: Colors.white, size: 22),
+                            ),
+                            onDismissed: (_) {
+                              context.read<NotificationBloc>().add(
+                                    NotificationEventDelete(
+                                      notificationId: notification.id,
+                                    ),
+                                  );
+                            },
+                            child: _NotificationTile(
+                              notification: notification,
+                              onTap: () => _handleNotificationTap(
+                                  context, notification),
+                            ),
+                          );
+                        },
                       ),
-                      itemCount: notifications.length,
-                      separatorBuilder: (_, __) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Divider(color: const Color(0xFFFFDECF)),
-                      ),
-                      itemBuilder: (context, index) {
-                        final notification = notifications[index];
-                        return _NotificationTile(
-                          notification: notification,
-                          onTap: () =>
-                              _handleNotificationTap(context, notification),
-                        );
-                      },
-                    ),
             ),
           ],
         ),
@@ -267,7 +301,14 @@ class NotificationDrawer extends StatelessWidget {
 // ============================================================
 class _Header extends StatelessWidget {
   final int unreadCount;
-  const _Header({required this.unreadCount});
+  final bool showClearAll;
+  final VoidCallback? onClearAll;
+
+  const _Header({
+    required this.unreadCount,
+    this.showClearAll = false,
+    this.onClearAll,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -313,17 +354,50 @@ class _Header extends StatelessWidget {
             color: AppColor.yellow,
           ),
           const SizedBox(height: 15),
-          Text(
-            unreadCount == 0
-                ? 'No new notifications'
-                : 'You have $unreadCount unread notification${unreadCount == 1 ? '' : 's'}',
-            style: const TextStyle(
-              color: Color(0xFFF8F8F8),
-              fontSize: 18,
-              fontFamily: 'League Spartan',
-              fontWeight: FontWeight.w500,
-            ),
+
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  unreadCount == 0
+                      ? 'No new notifications'
+                      : 'You have $unreadCount unread notification${unreadCount == 1 ? '' : 's'}',
+                  style: const TextStyle(
+                    color: Color(0xFFF8F8F8),
+                    fontSize: 18,
+                    fontFamily: 'League Spartan',
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              if (unreadCount > 0 || showClearAll)
+                GestureDetector(
+                  onTap: onClearAll,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFDECF),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'Clear all',
+                      style: TextStyle(
+                        color: AppColor.orange,
+                        fontSize: 12,
+                        fontFamily: 'League Spartan',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
+
+
+
         ],
       ),
     );

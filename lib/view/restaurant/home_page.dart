@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -1006,18 +1007,24 @@ class _RestaurantHomeViewState extends State<RestaurantHomeView> {
                                                                   .transparent,
                                                           child: Stack(
                                                             children: [
-                                                              ClipRRect(
+                                                                                                                          ClipRRect(
                                                                 borderRadius:
                                                                     BorderRadius
                                                                         .circular(
                                                                             20),
-                                                                child: Image
-                                                                    .network(
-                                                                  _galleryImages[
-                                                                      index],
+                                                                child: CachedNetworkImage(
+                                                                  imageUrl:
+                                                                      _galleryImages[
+                                                                          index],
                                                                   fit: BoxFit
                                                                       .contain,
-                                                                  errorBuilder: (_,
+                                                                  placeholder: (_,
+                                                                          __) =>
+                                                                      Container(
+                                                                    color: const Color(
+                                                                        0xFFFFDECF),
+                                                                  ),
+                                                                  errorWidget: (_,
                                                                           __,
                                                                           ___) =>
                                                                       Container(
@@ -1080,15 +1087,21 @@ class _RestaurantHomeViewState extends State<RestaurantHomeView> {
                                                             BorderRadius
                                                                 .circular(5),
                                                       ),
-                                                      child: ClipRRect(
+                                                                                                           child: ClipRRect(
                                                         borderRadius:
                                                             BorderRadius
                                                                 .circular(5),
-                                                        child: Image.network(
-                                                          _galleryImages[
-                                                              index],
+                                                        child: CachedNetworkImage(
+                                                          imageUrl:
+                                                              _galleryImages[
+                                                                  index],
                                                           fit: BoxFit.cover,
-                                                          errorBuilder:
+                                                          placeholder: (_, __) =>
+                                                              Container(
+                                                            color: const Color(
+                                                                0xFFFFDECF),
+                                                          ),
+                                                          errorWidget:
                                                               (_, __, ___) =>
                                                                   Container(
                                                             color: const Color(

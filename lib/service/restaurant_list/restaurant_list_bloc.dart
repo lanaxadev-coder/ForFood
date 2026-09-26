@@ -64,14 +64,21 @@ class RestaurantListBloc
     emit(state.copyWith(isLoadingHighDemands: true, clearError: true));
 
     try {
-      final restaurants =
+            final restaurants =
           await _firestoreProvider.getAllRestaurants(limit: 20);
+
+      // ✅ PARALLEL: fire all menu fetches at once instead of one-by-one.
+      final menuLists = await Future.wait(
+        restaurants.map(
+          (r) => _firestoreProvider.getMenuItemsByRestaurantId(r.id),
+        ),
+      );
 
       final popularDishes = <PopularDish>[];
 
-      for (final restaurant in restaurants) {
-        final menuItems =
-            await _firestoreProvider.getMenuItemsByRestaurantId(restaurant.id);
+      for (int i = 0; i < restaurants.length; i++) {
+        final restaurant = restaurants[i];
+        final menuItems = menuLists[i];
 
         final orderedDishes = menuItems.where((item) => item.orderCount > 0);
 
@@ -92,7 +99,7 @@ class RestaurantListBloc
           );
         }
       }
-
+     
       // Sort globally: highest order count → highest rating → nearest
       popularDishes.sort((a, b) {
         final orderComparison = b.menuItem.orderCount.compareTo(a.menuItem.orderCount);

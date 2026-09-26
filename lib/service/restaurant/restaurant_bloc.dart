@@ -11,6 +11,7 @@ import 'package:forfood/service/database/firestore_provider.dart';
 import 'package:forfood/service/exceptions/domain_exceptions.dart';
 import 'package:forfood/service/restaurant/restaurant_event.dart';
 import 'package:forfood/service/restaurant/restaurant_state.dart';
+import 'package:forfood/utilities/friendly_error.dart';
 
 class RestaurantBloc extends Bloc<RestaurantEvent, RestaurantState> {
   final FirestoreProvider _firestoreProvider;
@@ -118,10 +119,10 @@ Future<void> _onFetchByOwnerId(
     );
   } on RestaurantNotFoundException catch (e) {
     _timeoutTimer?.cancel();
-    emit(RestaurantStateError(message: e.message));
+    emit(RestaurantStateError(message: friendlyError(e)));
   } on FirestoreOperationException catch (e) {
     _timeoutTimer?.cancel();
-    emit(RestaurantStateError(message: e.message));
+    emit(RestaurantStateError(message: friendlyError(e)));
   } catch (e) {
     _timeoutTimer?.cancel();
     emit(RestaurantStateError(message: 'Failed to fetch restaurant: $e'));

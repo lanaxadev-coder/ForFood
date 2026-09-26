@@ -77,6 +77,10 @@ dependencies:
   # Revenue
   purchases_flutter: ^10.8.0
   firebase_messaging: ^15.1.6
+  cached_network_image: ^3.4.1
+  flutter_map_cache: ^1.5.2
+  dio_cache_interceptor: ^3.5.1
+  dio_cache_interceptor_hive_store: ^4.0.0
 
 dev_dependencies:
   flutter_test:

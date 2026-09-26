@@ -21,6 +21,7 @@ import 'package:forfood/service/restaurant_list/restaurant_list_state.dart';
 import 'package:forfood/utilities/page_transition.dart';
 import 'package:forfood/utilities/tab_route.dart';
 import 'package:forfood/view/chat_inbox_view.dart';
+import 'package:forfood/view/user/my_order_view.dart';
 
 import 'package:forfood/view/user/retaurant_detail_screen.dart';
 import 'package:forfood/view/user/home_page.dart';
@@ -86,7 +87,7 @@ class _RecommendationListViewState extends State<RecommendationListView> {
         break;
       case 3:
         // ✅ Cart tab → cart drawer
-        _openCartDrawer();
+        Navigator.of(context).push(tabRoute(const MyOrdersView()));
         break;
       case 4:
         // ✅ Profile tab → profile drawer

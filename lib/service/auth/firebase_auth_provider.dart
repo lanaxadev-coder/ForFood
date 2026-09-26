@@ -383,17 +383,43 @@ geohash: GeohashUtil.encode(
     print('✅ FIREBASE AUTH PROVIDER: Signed out');
   }
 
-  @override
-  Future<void> deleteAccount() async {
-    print('🔵 FIREBASE AUTH PROVIDER: deleteAccount called');
-    final user = _auth.currentUser;
-    if (user == null) return;
-    await _firestoreProvider.deleteUser(user.uid);
-    await user.delete();
-    print('✅ FIREBASE AUTH PROVIDER: Account deleted');
+ @override
+Future<void> deleteAccount() async {
+  print('🐛 PROVIDER: deleteAccount called');
+  final user = _auth.currentUser;
+  if (user == null) {
+    print('🐛 PROVIDER: no current user');
+    throw const AuthenticationException('No user is currently signed in.');
   }
 
-  @override
+  try {
+    // 1. Delete ALL Firestore data FIRST (before Auth — else UID is lost)
+    print('🐛 PROVIDER: clearing Firestore data for ${user.uid}');
+    await _firestoreProvider.deleteAllUserData(user.uid);
+    print('🐛 PROVIDER: Firestore data cleared');
+
+    // 2. Then delete the Firebase Auth user
+    print('🐛 PROVIDER: calling user.delete()');
+    await user.delete();
+    print('🐛 PROVIDER: user.delete() succeeded');
+  } on FirebaseAuthException catch (e) {
+    print('🐛 PROVIDER: FirebaseAuthException — ${e.code}');
+    if (e.code == 'requires-recent-login') {
+      throw const AuthenticationException(
+        'Please log in again before deleting your account.',
+      );
+    }
+    throw AuthenticationException(
+      'Account deletion failed: ${e.message ?? e.code}',
+    );
+  } on FirestoreOperationException catch (e) {
+    print('🐛 PROVIDER: FirestoreOperationException — ${e.message}');
+    throw AccountDeletionException(e.message);
+  } catch (e) {
+    print('🐛 PROVIDER: unknown — $e');
+    throw AccountDeletionException('Account deletion failed: $e');
+  }
+}  @override
   Future<AuthUser> signInWithGoogle() async {
     print('🔵 FIREBASE AUTH PROVIDER: signInWithGoogle called');
     try {
